@@ -1,0 +1,3 @@
+
+
+class NotUniqueException(Exception): pass
