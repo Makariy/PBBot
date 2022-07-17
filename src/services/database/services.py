@@ -23,8 +23,11 @@ async def get_ofmodel_by_name(name: str) -> Union[OFModel, None]:
         return None
 
 
-async def get_all_ofmodels() -> List[OFModel]:
-    return await OFModel.all()
+async def get_all_ofmodels(name: str = "") -> List[OFModel]:
+    result = OFModel.all()
+    if name:
+        result = result.filter(name__startswith=name)
+    return await result
 
 
 async def get_image_by_path(path: str) -> Union[Image, None]:
