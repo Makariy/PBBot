@@ -15,6 +15,7 @@ class PBBot:
         self.chat_id = None
         self.application = ApplicationBuilder().token(token).build()
         self.application.add_handler(CommandHandler("start", self.command_start))
+        self.application.add_handler(CommandHandler("stop", self.command_stop))
         self.application.add_handler(CommandHandler("set", self.command_set_interval))
         self.application.add_handler(CommandHandler("model", self.command_model))
         self.application.add_handler(InlineQueryHandler(self.command_list_models))
@@ -52,6 +53,9 @@ class PBBot:
         context.job_queue.run_once(self.send_pics, 0, chat_id=update.effective_message.chat_id)
         self.job = context.job_queue.run_repeating(self.send_pics, self.interval, chat_id=update.effective_message.chat_id)
 
+    async def command_stop(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        self.job.job.remove()
+
     async def set_interval(self, number: int):
         self.interval = number * 60
 
@@ -85,7 +89,7 @@ class PBBot:
         model_name = " ".join(context.args)
         model = await get_ofmodel_by_name(model_name)
         if model is None:
-            await bot.send_message(chat_id=chat_id, text="Не удаётся найти такую модель, программист идиот")
+            await bot.send_message(chat_id=chat_id, text="Не удаётся найти такую модель, программист идиот, (или ты...)")
             return
         images = await get_images_by_model(model)
         await self._send_pics(bot, chat_id, images)
