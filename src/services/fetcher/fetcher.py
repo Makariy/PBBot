@@ -1,5 +1,3 @@
-import os
-import shutil
 import asyncio
 from typing import List
 from services.fetcher.models import CardPreview
@@ -9,7 +7,8 @@ from .parser.model_page_parser import ModelPageParser
 from . import logger
 
 from .requester import download_image
-from services.extern.saver import save_data_to_file, delete_directory
+from services.extern.saver import save_data_to_file
+from services.extern.purger import delete_directory
 from uuid import uuid4
 
 import config
@@ -28,7 +27,7 @@ async def download_images(card: CardPreview, srcs: List[str]) -> List[str]:
         return [f"{card.title}/{filename}" for filename in filenames]
 
     except Exception as e:
-        delete_directory(card.titel)
+        delete_directory(card.title)
         raise e
 
 

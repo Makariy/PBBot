@@ -3,10 +3,16 @@ from services.database.models import *
 from tortoise.exceptions import DoesNotExist
 from .exceptions import NotUniqueException
 
+from services.extern.purger import delete_file
+
 
 async def get_images_by_model(model: OFModel) -> List[Image]:
     card = await Card.get(model=model).prefetch_related('images')
     return card.images
+
+
+async def get_all_images() -> List[Image]:
+    return await Image.all()
 
 
 async def get_card_by_link(link: str) -> Union[Card, None]:
@@ -24,9 +30,9 @@ async def get_ofmodel_by_name(name: str) -> Union[OFModel, None]:
 
 
 async def get_all_ofmodels(name: str = "") -> List[OFModel]:
-    result = OFModel.all()
+    result = OFModel.all().order_by("name")
     if name:
-        result = result.filter(name__startswith=name)
+        result = result.filter(name__contains=name)
     return await result
 
 
@@ -72,3 +78,10 @@ async def create_card(model_name: str,
     return card
 
 
+async def delete_image(image: Image):
+    try:
+        delete_file(image.file)
+    except FileNotFoundError:
+        pass
+    finally:
+        await image.delete()

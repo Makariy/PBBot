@@ -1,11 +1,10 @@
 import os
-import shutil
 
-import config
+from .path_maker import get_path_for_item
 
 
 def save_data_to_file(root: str, filename: str, content: bytes) -> str:
-    path = os.path.join(config.SAVING_ROOT, root)
+    path = get_path_for_item(root)
     if not os.path.exists(path):
         os.mkdir(path)
 
@@ -14,5 +13,3 @@ def save_data_to_file(root: str, filename: str, content: bytes) -> str:
     return os.path.join(root, filename)
 
 
-def delete_directory(directory: str):
-    shutil.rmtree(os.path.join(config.SAVING_ROOT, directory))

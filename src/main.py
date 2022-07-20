@@ -13,7 +13,10 @@ def main():
     setup_logging()
     try:
         asyncio.run(init_database())
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         bot = PBBot(config.TELEGRAM_API_TOKEN)
+        print("Starting the bot")
         bot.start()
     finally:
         asyncio.run(stop_database())

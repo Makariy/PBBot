@@ -1,4 +1,3 @@
-import asyncio
 import random
 from uuid import uuid4
 
@@ -18,13 +17,12 @@ class PBBot:
         self.application.add_handler(CommandHandler("stop", self.command_stop))
         self.application.add_handler(CommandHandler("set", self.command_set_interval))
         self.application.add_handler(CommandHandler("model", self.command_model))
+        self.application.add_handler(CommandHandler("models", self.command_models))
         self.application.add_handler(InlineQueryHandler(self.command_list_models))
+
         self.interval = 60 * 60
-        self.job = None
 
     def start(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         self.application.run_polling(close_loop=False)
 
     def _pick_random_model(self, models: List[OFModel]):
@@ -33,11 +31,13 @@ class PBBot:
     async def _send_pics(self, bot: telegram.Bot,
                         chat_id: int,
                         images: List[Image]):
+        _images = list(images)
+        random.shuffle(_images)
         await bot.send_media_group(
             chat_id=chat_id,
             media=[
                 InputMediaPhoto(load_file_data(image.file))
-                for image in images[:10]
+                for image in _images[:10]
             ]
         )
 
@@ -53,17 +53,24 @@ class PBBot:
         context.job_queue.run_once(self.send_pics, 0, chat_id=update.effective_message.chat_id)
         self.job = context.job_queue.run_repeating(self.send_pics, self.interval, chat_id=update.effective_message.chat_id)
 
-    async def command_stop(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        self.job.job.remove()
+    async def purge_jobs(self, context: ContextTypes.DEFAULT_TYPE):
+        jobs = context.job_queue.jobs()
+        if len(jobs) > 0:
+            jobs[0].job.remove()
 
-    async def set_interval(self, number: int):
+    async def command_stop(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.purge_jobs(context)
+
+    async def set_interval(self, number: float):
         self.interval = number * 60
 
     async def command_set_interval(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
-            await self.set_interval(int(context.args[0]))
-            self.job.job.remove()
-            self.job = context.job_queue.run_repeating(self.send_pics, self.interval,
+            await self.set_interval(float(context.args[0]))
+            await self.purge_jobs(context)
+            if self.job is not None:
+                self.job.job.remove()
+            context.job_queue.run_repeating(self.send_pics, self.interval,
                                                        chat_id=update.effective_message.chat_id)
 
         except (IndexError, ValueError):
@@ -93,4 +100,11 @@ class PBBot:
             return
         images = await get_images_by_model(model)
         await self._send_pics(bot, chat_id, images)
+
+    async def command_models(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        bot = update.effective_chat.get_bot()
+        chat_id = update.effective_message.chat_id
+        models = await get_all_ofmodels()
+        await bot.send_message(chat_id=chat_id, text="\n".join([model.name for model in models]))
+
 

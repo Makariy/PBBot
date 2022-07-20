@@ -6,6 +6,7 @@ from services.fetcher.fetcher import \
     download_images, \
     is_valid_page
 from services.database.services import *
+from services.extern.image_validator import purge_invalid_images
 
 
 async def load_data_for_card(card):
@@ -38,4 +39,9 @@ async def full_reload_database():
         load_data_for_card_tasks = [asyncio.create_task(load_data_for_card(card)) for card in cards]
         await asyncio.gather(*load_data_for_card_tasks)
         page += 1
+
+    # Loading the images, some of them are in an unknown format and cannot be read by PIL.Image
+    # or Telegram, so I need to purge them
+    await purge_invalid_images()
+
 
