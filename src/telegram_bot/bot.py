@@ -18,7 +18,8 @@ class PBBot:
         self.application.add_handler(CommandHandler("set", self.command_set_interval))
         self.application.add_handler(CommandHandler("model", self.command_model))
         self.application.add_handler(CommandHandler("models", self.command_models))
-        self.application.add_handler(InlineQueryHandler(self.command_list_models))
+        self.application.add_handler(CommandHandler("help", self.command_help))
+        self.application.add_handler(InlineQueryHandler(self.inline_list_models))
 
         self.interval = 60 * 60
 
@@ -76,7 +77,7 @@ class PBBot:
         except (IndexError, ValueError):
             await update.effective_message.reply_text("Usage: /set <time in seconds>")
 
-    async def command_list_models(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def inline_list_models(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         name = update.inline_query.query
         models = await get_all_ofmodels(name)
         model_names = [model.name for model in models]
@@ -107,4 +108,15 @@ class PBBot:
         models = await get_all_ofmodels()
         await bot.send_message(chat_id=chat_id, text="\n".join([model.name for model in models]))
 
+    async def command_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.effective_message.reply_text(
+            text="""
+Используйте следующие команды для взаимодействия с ботом, приятных ощущений.
+/help - показать это сообщение 
+/start - начать отправку моделей
+/stop - прекратить отправку моделей
+/set <время> - установить период отправки моделей в секундах
+@<Имя бота> <имя> - отправить модель по имени  
+            """
+        )
 
